@@ -291,14 +291,14 @@ Commands are designed to follow LaTeX syntax as closely as possible, for example
 
 # Prolog
 
-| Command             | Output |     | Command | Output   |
-| ------------------- | ------ | --- | ------- | -------- |
-| Anonymous           | `_`    |     | Rule    | `() :-.` |
-| Close Block comment | `*\`   |     | comment | `%`      |
-| Fail                | `Fail` |     | cut     | `!`      |
-| Not                 | `\+`   |     | iffae   | `( ; )`  |
-| Open Block comment  | `/*`   |     | implies | `:-`     |
-| Or                  | `;`    |     |         | ``       |
+| Command             | Output                 |     | Command | Output   |
+| ------------------- | ---------------------- | --- | ------- | -------- |
+| Anonymous           | `_`                    |     | Rule    | `() :-.` |
+| Close Block comment | `*\` | | comment | `%` |
+| Fail                | `Fail`                 |     | cut     | `!`      |
+| Not                 | `\+`                   |     | iffae   | `( ; )`  |
+| Open Block comment  | `/*`                   |     | implies | `:-`     |
+| Or                  | `;`                    |     |         | ``       |
 
 # Python
 
