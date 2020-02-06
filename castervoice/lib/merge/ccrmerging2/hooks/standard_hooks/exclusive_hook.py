@@ -4,10 +4,10 @@ from castervoice.lib.merge.ccrmerging2.hooks.events.event_types import EventType
 from castervoice.lib import printer
 
 def _apply_exclusiveness(grammar):
-        try:
-            grammar.set_exclusiveness(1)
-        except Exception as e:
-            printer.out(e)
+    try:
+        grammar.set_exclusiveness(1)
+    except Exception as e:
+        printer.out(e)
 
 
 class ExclusiveHook(BaseHook):
