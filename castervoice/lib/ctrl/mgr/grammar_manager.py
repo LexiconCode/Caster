@@ -12,6 +12,7 @@ from castervoice.lib.ctrl.mgr.rule_formatter import _set_rdescripts
 from castervoice.lib.ctrl.mgr.rules_enabled_diff import RulesEnabledDiff
 from castervoice.lib.merge.ccrmerging2.hooks.events.activation_event import RuleActivationEvent
 from castervoice.lib.merge.ccrmerging2.hooks.events.on_error_event import OnErrorEvent
+from castervoice.lib.merge.ccrmerging2.hooks.events.post_grammers_loaded_event import PostGrammersLoadedEvent
 from castervoice.lib.merge.ccrmerging2.sorting.config_ruleset_sorter import ConfigBasedRuleSetSorter
 from castervoice.lib.util.ordered_set import OrderedSet
 
@@ -260,6 +261,7 @@ class GrammarManager(object):
         self._grammars_container.set_ccr(grammars)
         for grammar in grammars:
             grammar.load()
+            self._hooks_runner.execute(PostGrammersLoadedEvent(grammar))
 
         return merge_result.rules_enabled_diff
 
@@ -274,6 +276,7 @@ class GrammarManager(object):
             grammar = self._mapping_rule_maker.create_non_ccr_grammar(managed_rule)
             self._grammars_container.set_non_ccr(rcn, grammar)
             grammar.load()
+            self._hooks_runner.execute(PostGrammersLoadedEvent(grammar))
             return RulesEnabledDiff([rcn], frozenset())
         else:
             self._grammars_container.set_non_ccr(rcn, None)
