@@ -9,8 +9,7 @@ from castervoice.lib import settings, utilities, control, printer
 
 class SikuliController(object):
 
-    _ENABLE_GEN_RULE = Playback([(["enable", "sikuli", "custom"], 0.0)])
-    _DISABLE_GEN_RULE = Playback([(["disable", "sikuli", "custom"], 0.0)])
+    _GEN_RULE_STATE = False
 
     def __init__(self):
         self._server_proxy = None
@@ -65,7 +64,7 @@ class SikuliController(object):
         self._server_proxy.list_functions()
         # success at this point:
         printer.out("Caster-Sikuli server started successfully.")
-        SikuliController._ENABLE_GEN_RULE.execute()
+        SikuliController._GEN_RULE_STATE = True
 
     def _retry_server_proxy(self):
         printer.out("Attempting Caster-Sikuli connection [...]")
@@ -82,7 +81,7 @@ class SikuliController(object):
     def terminate_server_proxy(self):
         control.nexus().comm.coms.pop('sikuli')
         self._server_proxy.terminate()
-        SikuliController._DISABLE_GEN_RULE.execute()
+        SikuliController._GEN_RULE_STATE = False
 
     def _execute(self, fname):
         try:
