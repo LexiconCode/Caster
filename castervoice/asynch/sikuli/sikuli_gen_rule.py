@@ -26,4 +26,4 @@ class SikuliRule(MappingRule):
 
 
 def get_rule():
-    return SikuliRule, RuleDetails(name="sikuli custom")
+    return SikuliRule, RuleDetails(name="sikuli custom", function_context=sikuli_controller.get_instance()._GEN_RULE_STATE)
