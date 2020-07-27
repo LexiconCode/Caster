@@ -7,11 +7,13 @@ class EngineConfigEarly:
     Initializes engine specific customizations before Nexus initializes.
     Grammars are not loaded
     """
-    # get_engine used as a workaround for running Natlink inprocess
-    engine = get_engine().name
+    from castervoice.lib import settings
+    from dragonfly import get_engine
+    engine = get_engine().name  # get_engine used as a workaround for running Natlink inprocess
 
     def __init__(self):
         self._set_cancel_word()
+        self.set_logging_level()
 
     def _set_cancel_word(self):
         """
@@ -22,6 +24,13 @@ class EngineConfigEarly:
             from castervoice.rules.ccr.standard import SymbolSpecs
             SymbolSpecs.set_cancel_word("escape")
 
+    def set_logging_level(self):
+        if self.settings.SETTINGS["engine"]["debug"]:
+            import logging
+            logging.getLogger('action.exec').setLevel(10) # DEBUG  
+        else:
+            import logging
+            logging.getLogger('action.exec').setLevel(30) # WARNING      
 
 class EngineConfigLate:
     """
