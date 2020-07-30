@@ -12,9 +12,21 @@ class EngineConfigEarly:
     engine = get_engine().name  # get_engine used as a workaround for running Natlink inprocess
 
     def __init__(self):
-        self._set_cancel_word()
         self.set_logging_level()
+        self.set_cancel_word()
 
+    def set_logging_level(self):
+        if self.settings.SETTINGS["engine"]["logging_override"]:
+            import logging
+            print("logging")
+            definitions = self.settings.SETTINGS["engine"]["logging_override_definitions"]
+            for override in definitions.items():
+                logger, level = override
+                try:
+                    logging.getLogger(str(logger)).setLevel(int(level))
+                except Exception:
+                    print("getLogger:{} or level: {} are not valid parameters".format(logger, level))
+                    
     def _set_cancel_word(self):
         """
         Defines SymbolSpecs cancel word as "escape" for windows speech recognition (WSR)
@@ -24,13 +36,6 @@ class EngineConfigEarly:
             from castervoice.rules.ccr.standard import SymbolSpecs
             SymbolSpecs.set_cancel_word("escape")
 
-    def set_logging_level(self):
-        if self.settings.SETTINGS["engine"]["debug"]:
-            import logging
-            logging.getLogger('action.exec').setLevel(10) # DEBUG  
-        else:
-            import logging
-            logging.getLogger('action.exec').setLevel(30) # WARNING      
 
 class EngineConfigLate:
     """
