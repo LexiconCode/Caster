@@ -5,10 +5,10 @@ from builtins import str
 import io
 import json
 import six
+import shutil
 import os
 import re
 import sys
-import six
 import time
 import traceback
 import subprocess
@@ -294,6 +294,24 @@ def clear_log():
                 printer.out("clear_log: Not implemented with GUI")
     except Exception as e:
         printer.out(e)
+
+def get_window_manager():
+    '''
+    Returns executable to open files/folders/programs
+    '''
+    Found = False
+    for cmd in ["gio", "xdg-open", "gnome-open", "nautilus", "explorer.exe", "open"]:
+        if six.PY3:
+            executable = shutil.which(cmd)
+        else:
+            from distutils.spawn import find_executable
+            executable  = find_executable(cmd)
+        if executable is not None:
+            executable = True
+            print(cmd)
+            return cmd
+    if not executable:
+        print("No window manager executable found")
 
 
 # TODO: BringMe - Implement clipboard formats for Mac
