@@ -12,7 +12,7 @@ if six.PY2:
 else:
     from pathlib import Path  # pylint: disable=import-error
 
-from dragonfly import Function, Choice, Dictation, ContextAction
+from dragonfly import Function, Choice, Dictation, ContextAction, BringApp
 from castervoice.lib.context import AppContext
 
 from castervoice.lib import settings, utilities, context, contexts
@@ -34,17 +34,18 @@ class BringRule(BaseSelfModifyingRule):
     """
 
     pronunciation = "bring me"
-
     # Contexts
     _browser_context = AppContext(["chrome", "firefox"])
     _explorer_context = AppContext("explorer.exe") | contexts.DIALOGUE_CONTEXT
     _terminal_context = contexts.TERMINAL_CONTEXT
     # Paths
     _terminal_path = settings.settings(["paths", "TERMINAL_PATH"])
+    _window_manager = utilities.get_window_manager()
     _explorer_path = str(Path("C:\\Windows\\explorer.exe"))
     _source_dir =  Path(settings.SETTINGS["paths"]["BASE_PATH"]).parents[0]
     _user_dir = settings.SETTINGS["paths"]["USER_DIR"]
     _home_dir = Path.home()
+    _platform = sys.platform 
 
     def __init__(self, **kwargs):
         super(BringRule, self).__init__(settings.settings(["paths", "SM_BRINGME_PATH"]), **kwargs)
@@ -125,6 +126,7 @@ class BringRule(BaseSelfModifyingRule):
             files = utilities.get_selected_files(folders=False)
             path = files[0] if files else None # or allow adding multiple files
         elif launch_type == 'folder':
+            # TODO: leverage clipboard formats Mac/Linux
             files = utilities.get_selected_files(folders=True)
             path = files[0] if files else None # or allow adding multiple folders
         else:
@@ -178,19 +180,34 @@ class BringRule(BaseSelfModifyingRule):
         ]).execute()
 
     # =================== BringMe actions --> these do not change state
-
+# bring me caster rules
     def _bring_website(self, website):
-        browser = utilities.default_browser_command()
-        Popen(shlex.split(browser.replace('%1', website)))
+        cmd = utilities.default_browser_command().replace(r'%1', website)
+        if self._platform.startswith == 'win':
+            Popen(cmd)
+        else:
+            Popen(shlex.split(cmd))
 
     def _bring_folder(self, folder, app):
+        # TODO: add terminal_context for other platforms
         if not app:
-            ContextAction(Function(lambda: Popen([BringRule._explorer_path, folder])), [
-                (BringRule._terminal_context, Text("cd \"%s\"\n" % folder)),
-                (BringRule._explorer_context, Key("c-l/5") + Text("%s\n" % folder))
-            ]).execute()
+            if self._platform.startswith('win'):
+                ContextAction(Function(lambda: Popen([BringRule._explorer_path, folder])), [
+                    (BringRule._terminal_context, Text("cd \"%s\"\n" % folder)),
+                    (BringRule._explorer_context, Key("c-l/5") + Text("%s\n" % folder))
+                ]).execute()
+            if self._platform == "linux":
+                if self._window_manager == "gio":
+                    Popen([self._window_manager, "open", folder])
+                else:
+                    Popen([self._window_manager, folder])
+            if self._platform == "darwin":
+                Popen(['open', folder])
         elif app == "terminal":
-            Popen([BringRule._terminal_path, "--cd=" + folder.replace("\\", "/")])
+            if self._platform.startswith('win'):
+                Popen([BringRule._terminal_path, "--cd=" + folder.replace("\\", "/")])
+            if self._platform == "linux":
+                Popen([self._window_manager, folder]) 
         elif app == "explorer":
             Popen([BringRule._explorer_path, folder])
 
@@ -198,7 +215,15 @@ class BringRule(BaseSelfModifyingRule):
         Popen(program)
 
     def _bring_file(self, file):
-        threading.Thread(target=os.startfile, args=(file, )).start()  # pylint: disable=no-member
+        if self._platform == "win":
+            threading.Thread(target=os.startfile, args=(file, )).start()  # pylint: disable=no-member
+        if self._platform == "linux":
+            if self._window_manager == "gio":
+                Popen([self._window_manager, "open", file])
+            else:
+                Popen([self._window_manager, file])
+        if self._platform == "darwin":
+            Popen([self._window_manager, "-R", file])
 
     # =================== BringMe default setup:
     _bm_defaults = {
