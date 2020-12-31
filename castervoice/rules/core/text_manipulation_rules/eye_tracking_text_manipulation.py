@@ -16,7 +16,7 @@ from dragonfly import (
     Dictation,
     Grammar,
     MappingRule,
-    get_engine
+    get_engine,
 )
 
 from castervoice.lib.actions import Key, Text, Mouse
@@ -33,11 +33,11 @@ else:
 tobii = Path.joinpath(Path(settings.SETTINGS["paths"]["USER_DIR"]), "third_party_integration\\tobii\\dll")
 
 def set_up_tobii_dlls():
-    """Downloads and Unzips dll `Tobii Interaction`0.7.3 in to Caster user directory from nuget"""
+    """Downloads and Unzips dll `Tobii Interaction` in to Caster user directory from nuget"""
     temp = tempfile.TemporaryDirectory()
     temp_zip = Path.joinpath(Path(temp.name, 'Tobii.zip'))
     try:
-        response = r"https://www.nuget.org/api/v2/package/Tobii.Interaction/0.7.3"
+        response = r"https://www.nuget.org/api/v2/package/Tobii.Interaction"
         zip = requests.get(response, allow_redirects=True)
         open(temp_zip, 'wb').write(zip.content)
 
