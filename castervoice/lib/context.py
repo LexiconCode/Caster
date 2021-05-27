@@ -139,9 +139,8 @@ def read_selected_without_altering_clipboard(same_is_okay=False, pause_time="20"
         
         # Use the system clipboard
         copy(pause_time)
+        Clipboard.wait_for_change(1)
         temporary = Clipboard(from_system=True).get_system_text()
-        time.sleep(settings.SETTINGS["miscellaneous"]["keypress_wait"]/
-                       1000.) 
         # Restore original system clipboard content.
         cb.copy_to_system(True)
 
@@ -165,8 +164,7 @@ def paste_string_without_altering_clipboard(content, pause_time="1"):
         # Use the system clipboard
         Clipboard.set_system_text(content)
         paste(pause_time)
-        time.sleep(settings.SETTINGS["miscellaneous"]["keypress_wait"]/
-                       1000.)  # time for keypress to execute
+        Clipboard.wait_for_change(1)
         # Restore original system clipboard content.
         original.copy_to_system(True)
         return True
