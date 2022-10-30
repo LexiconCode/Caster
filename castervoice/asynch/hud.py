@@ -1,24 +1,15 @@
-#! python
-'''
-Caster HUD Window module
-'''
-# pylint: disable=import-error,no-name-in-module
-import html
-import json
 import os
-import signal
 import sys
-import threading
-import PySide2.QtCore
-import PySide2.QtGui
-import dragonfly
-from xmlrpc.server import SimpleXMLRPCServer
-from PySide2.QtWidgets import QApplication
-from PySide2.QtWidgets import QMainWindow
-from PySide2.QtWidgets import QTextEdit
-from PySide2.QtWidgets import QTreeView
-from PySide2.QtWidgets import QVBoxLayout
-from PySide2.QtWidgets import QWidget
+from multiprocessing import Queue
+import signal
+import time
+import tkinter as tk
+from tkinter.scrolledtext import ScrolledText
+from tkinter import ttk, VERTICAL, HORIZONTAL, N, S, E, W
+
+from multiprocessing import Process, Queue
+from dragonfly import monitors
+
 try:  # Style C -- may be imported into Caster, or externally
     BASE_PATH = os.path.realpath(__file__).rsplit(os.path.sep + "castervoice", 1)[0]
     if BASE_PATH not in sys.path:
@@ -27,204 +18,182 @@ finally:
     from castervoice.lib.merge.communication import Communicator
     from castervoice.lib import settings
 
-CLEAR_HUD_EVENT = PySide2.QtCore.QEvent.Type(PySide2.QtCore.QEvent.registerEventType(-1))
-HIDE_HUD_EVENT = PySide2.QtCore.QEvent.Type(PySide2.QtCore.QEvent.registerEventType(-1))
-SHOW_HUD_EVENT = PySide2.QtCore.QEvent.Type(PySide2.QtCore.QEvent.registerEventType(-1))
-HIDE_RULES_EVENT = PySide2.QtCore.QEvent.Type(PySide2.QtCore.QEvent.registerEventType(-1))
-SHOW_RULES_EVENT = PySide2.QtCore.QEvent.Type(PySide2.QtCore.QEvent.registerEventType(-1))
-SEND_COMMAND_EVENT = PySide2.QtCore.QEvent.Type(PySide2.QtCore.QEvent.registerEventType(-1))
+def hud_manager(conn):
+    '''
+    Entry-point for the subprocess. Initializes a tk application, but does not
+    show the window. This function is called at program startup.
+    '''
+    app = Hud(conn)
+    app.mainloop()
 
+class Hud(tk.Tk):
+    def __init__(self, queue):
+        super().__init__()
+        self.message_queue = queue
+        self.title('Caster Hud')
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
+        # Create the panes and frames
+        vertical_pane = ttk.PanedWindow(self, orient=VERTICAL)
+        vertical_pane.grid(row=0, column=0, sticky="nsew")
+        horizontal_pane = ttk.PanedWindow(vertical_pane, orient=HORIZONTAL)
+        vertical_pane.add(horizontal_pane)
+        console_frame = ttk.Labelframe(horizontal_pane, text="Console")
+        console_frame.columnconfigure(0, weight=1)
+        console_frame.rowconfigure(0, weight=1)
+        horizontal_pane.add(console_frame, weight=1)
+        # Create a ScrolledText wdiget
+        self.scrolled_text = ScrolledText(console_frame, state='disabled', height=12)
+        self.scrolled_text.grid(row=0, column=0, sticky=(N, S, W, E))
+        self.scrolled_text.configure(font='TkFixedFont')
+        self.scrolled_text.tag_config('fDICTATION', foreground='black')
+        self.scrolled_text.tag_config('MESSAGE', foreground='gray')
+        self.scrolled_text.tag_config('ENGINE', foreground='orange')
+        self.scrolled_text.tag_config('COMMAND', foreground='red')
+        self.scrolled_text.tag_config('DICTATIONe', foreground='red', underline=1)
+        self.duplicate_count = 1
+        self.last_message = None
+        # Initialize all frames
+        self.protocol('WM_DELETE_WINDOW', self.quit)
+        self.bind('<Control-q>', self.quit)
+        signal.signal(signal.SIGINT, self.quit)
+        self.rulesui = RulesUi(self)
+        self.rulesui.withdraw()
+        self.withdraw() # Hide HUD
+        # Start polling messages from the queue
+        self.after(50, self.poll_message_queue)
 
-class RPCEvent(PySide2.QtCore.QEvent):
+    def display_text(self, message_type, message):
+        if self.last_message != message:
+            self.scrolled_text.insert(tk.END, message + '\n')
+            self.duplicate_count = 1
+        else:
+            self.duplicate_count += 1
+            self.scrolled_text.mark_set("insert", "%d.%d" % (float(self.scrolled_text.index("current")) - 1, 0))
+            self.scrolled_text.replace('end-2c linestart', 'end-2c', message + f"({self.duplicate_count})")
+        self.last_message = message
+        # add text formatting
+        self.scrolled_text.tag_add(message_type, 'end-2c linestart', 'end-2c')
+        # Autoscroll to the bottom
+        self.scrolled_text.yview(tk.END)
 
-    def __init__(self, type, text):
-        PySide2.QtCore.QEvent.__init__(self, type)
-        self._text = text
+    def save_all_text(self):
+        self.saveText = self.scrolled_text.get('1.0', tk.END)  # Get all text in widget.
+        print('self.saveText:', self.saveText)
 
-    @property
-    def text(self):
-        return self._text
+    def clear_text(self):
+        self.scrolled_text.delete("1.0", tk.END)
 
-
-class RulesWindow(QWidget):
-
-    _WIDTH = 600
-    _MARGIN = 30
-
-    def __init__(self, text):
-        QWidget.__init__(self, f=(PySide2.QtCore.Qt.WindowStaysOnTopHint))
-        x = dragonfly.monitors[0].rectangle.dx - (RulesWindow._WIDTH + RulesWindow._MARGIN)
-        y = 300
-        dx = RulesWindow._WIDTH
-        dy = dragonfly.monitors[0].rectangle.dy - (y + 2 * RulesWindow._MARGIN)
-        self.setGeometry(x, y, dx, dy)
-        self.setWindowTitle("Active Rules")
-        rules_tree = PySide2.QtGui.QStandardItemModel()
-        rules_tree.setColumnCount(2)
-        rules_tree.setHorizontalHeaderLabels(['phrase', 'action'])
-        rules_dict = json.loads(text)
-        rules = rules_tree.invisibleRootItem()
-        for g in rules_dict:
-            gram = PySide2.QtGui.QStandardItem(g["name"]) if len(g["rules"]) > 1 else None
-            for r in g["rules"]:
-                rule = PySide2.QtGui.QStandardItem(r["name"])
-                rule.setRowCount(len(r["specs"]))
-                rule.setColumnCount(2)
-                row = 0
-                for s in r["specs"]:
-                    phrase, _, action = s.partition('::')
-                    rule.setChild(row, 0, PySide2.QtGui.QStandardItem(phrase))
-                    rule.setChild(row, 1, PySide2.QtGui.QStandardItem(action))
-                    row += 1
-                if gram is None:
-                    rules.appendRow(rule)
-                else:
-                    gram.appendRow(rule)
-            if gram:
-                rules.appendRow(gram)
-        tree_view = QTreeView(self)
-        tree_view.setModel(rules_tree)
-        tree_view.setColumnWidth(0, RulesWindow._WIDTH / 2)
-        layout = QVBoxLayout()
-        layout.addWidget(tree_view)
-        self.setLayout(layout)
-
-
-class HUDWindow(QMainWindow):
-
-    _WIDTH = 300
-    _HEIGHT = 200
-    _MARGIN = 30
-
-    def __init__(self, server):
-        QMainWindow.__init__(self, flags=(PySide2.QtCore.Qt.WindowStaysOnTopHint))
-        x = dragonfly.monitors[0].rectangle.dx - (HUDWindow._WIDTH + HUDWindow._MARGIN)
-        y = HUDWindow._MARGIN
-        dx = HUDWindow._WIDTH
-        dy = HUDWindow._HEIGHT
-        self.server = server
-        self.setup_xmlrpc_server()
-        self.setGeometry(x, y, dx, dy)
-        self.setWindowTitle(settings.HUD_TITLE)
-        self.output = QTextEdit()
-        self.output.setReadOnly(True)
-        self.setCentralWidget(self.output)
-        self.rules_window = None
-        self.commands_count = 0
-
-    def event(self, event):
-        if event.type() == SHOW_HUD_EVENT:
-            self.show()
-            return True
-        if event.type() == HIDE_HUD_EVENT:
-            self.hide()
-            return True
-        if event.type() == SHOW_RULES_EVENT:
-            self.rules_window = RulesWindow(event.text)
-            self.rules_window.show()
-            return True
-        if event.type() == HIDE_RULES_EVENT and self.rules_window:
-            self.rules_window.close()
-            self.rules_window = None
-            return True
-        if event.type() == SEND_COMMAND_EVENT:
-            escaped_text = html.escape(event.text)
-            if escaped_text.startswith('$'):
-                formatted_text = '<font color="blue">&lt;</font><b>{}</b>'.format(escaped_text[1:])
-                if self.commands_count == 0:
-                    self.output.setHtml(formatted_text)
-                else:
-                    # self.output.append('<br>')
-                    self.output.append(formatted_text)
-                cursor = self.output.textCursor()
-                cursor.movePosition(PySide2.QtGui.QTextCursor.End)
-                self.output.setTextCursor(cursor)
-                self.output.ensureCursorVisible()
-                self.commands_count += 1
-                if self.commands_count == 50:
-                    self.commands_count = 0
-                return True
-            if escaped_text.startswith('@'):
-                formatted_text = '<font color="purple">&gt;</font><b>{}</b>'.format(escaped_text[1:])
-            elif escaped_text.startswith(''):
-                formatted_text = '<font color="red">&gt;</font>{}'.format(escaped_text)
+    def poll_message_queue(self):
+        # Check every 50ms if there is a new message in the queue to display
+        while True:
+            try:
+                message = self.message_queue.get_nowait()
+            except Exception:
+                break
             else:
-                formatted_text = escaped_text
-            self.output.append(formatted_text)
-            self.output.ensureCursorVisible()
-            return True
-        if event.type() == CLEAR_HUD_EVENT:
-            self.commands_count = 0
-            return True
-        return QMainWindow.event(self, event)
+                self.prosses_queue(message)
+        self.after(50, self.poll_message_queue)
 
-    def closeEvent(self, event):
-        event.accept()
+    def prosses_queue(self, record):
+        if record is None:
+             self.quit()
+        try:
+            (message_type, message) = record
+            self.scrolled_text.configure(state='normal')
+            if message_type in ["fDICTATION", "DICTATION", "COMMAND", "MESSAGE", "ENGINE"]:
+                self.display_text(message_type, message)
+            elif message_type == "SHOW_HUD":
+               self.showhud()
+            elif message_type == "HIDE_HUD":
+               self.hidehud()
+            elif message_type == "SHOW_RULES":
+                self.rulesui.setrules(message)
+                self.rulesui.showrules()
+            elif message_type == "HIDE_RULES":
+                self.rulesui.hiderules()
+            elif message_type == "CLEAR_HUD":
+                self.clear_text()
+            elif message_type == "CLOSE_HUD":
+                self.quit()
+        finally:
+            self.scrolled_text.configure(state='disabled')
+    
+    def hidehud(self):
+        self.withdraw()
 
-    def setup_xmlrpc_server(self):
-        self.server.register_function(self.xmlrpc_clear, "clear_hud")
-        self.server.register_function(self.xmlrpc_ping, "ping")
-        self.server.register_function(self.xmlrpc_hide_hud, "hide_hud")
-        self.server.register_function(self.xmlrpc_hide_rules, "hide_rules")
-        self.server.register_function(self.xmlrpc_kill, "kill")
-        self.server.register_function(self.xmlrpc_send, "send")
-        self.server.register_function(self.xmlrpc_show_hud, "show_hud")
-        self.server.register_function(self.xmlrpc_show_rules, "show_rules")
-        server_thread = threading.Thread(target=self.server.serve_forever)
-        server_thread.daemon = True
-        server_thread.start()
-
-
-    def xmlrpc_clear(self):
-        PySide2.QtCore.QCoreApplication.postEvent(self, PySide2.QtCore.QEvent(CLEAR_HUD_EVENT))
-        return 0
-
-    def xmlrpc_ping(self):
-        return 0
-
-    def xmlrpc_hide_hud(self):
-        PySide2.QtCore.QCoreApplication.postEvent(self, PySide2.QtCore.QEvent(HIDE_HUD_EVENT))
-        return 0
-
-    def xmlrpc_show_hud(self):
-        PySide2.QtCore.QCoreApplication.postEvent(self, PySide2.QtCore.QEvent(SHOW_HUD_EVENT))
-        return 0
-
-    def xmlrpc_hide_rules(self):
-        PySide2.QtCore.QCoreApplication.postEvent(self, PySide2.QtCore.QEvent(HIDE_RULES_EVENT))
-        return 0
-
-    def xmlrpc_kill(self):
-        QApplication.quit()
-
-    def xmlrpc_send(self, text):
-        PySide2.QtCore.QCoreApplication.postEvent(self, RPCEvent(SEND_COMMAND_EVENT, text))
-        return len(text)
-
-    def xmlrpc_show_rules(self, text):
-        PySide2.QtCore.QCoreApplication.postEvent(self, RPCEvent(SHOW_RULES_EVENT, text))
-        return len(text)
+    def showhud(self):
+        self.deiconify()
+    
+    def quit(self, *args):
+        self.destroy()
+        os.kill(os.getpid(), signal.SIGTERM)
 
 
-def handler(signum, frame):
-    """
-    This handler doesn't stop the application when ^C is pressed,
-    but it prevents exceptions being thrown when later
-    the application is terminated from GUI.  Normally, HUD is started
-    by the recognition process and can't be killed from shell prompt,
-    in which case this handler is not needed.
-    """
-    pass
+class RulesUi(tk.Toplevel):
+    """Display messages in a scrolled text widget"""
+    def __init__(self, parent):
+        super().__init__(parent, relief=tk.SUNKEN, bd=2)
+        self.menubar = tk.Menu(self)
+        self.title("RulesUi")
+        self.winfo_toplevel().configure(menu=self.menubar)
 
+        self.treeview = ttk.Treeview(self, columns = ('Phrase', 'Action'))
+
+        self.yscrollbar = ttk.Scrollbar(self, orient='vertical', command=self.treeview.yview)
+        self.treeview.configure(yscrollcommand=self.yscrollbar.set)
+
+        self.treeview.grid(row=0, column=0, sticky="nsew")
+        self.yscrollbar.grid(row=0, column=1, sticky='nse')
+        self.yscrollbar.configure(command=self.treeview.yview)
+
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=1)
+        
+        self.treeview.heading('#0', text = 'Phrase')
+        self.treeview.heading('#1', text = 'Action')
+
+    def setrules(self, rules_dict):
+        for g in rules_dict:
+            print(g)
+            gram = g["name"] if len(g["rules"]) > 1 else None # nested rules in a grammar
+            if gram:
+                self.treeview.insert('', '0', gram, text = gram) # Insert grammar name to top level tree view
+            for r in g["rules"]:
+                parent = gram if gram is not None else '' # Insert rule into parent grammar or '' as top level tree view
+                self.treeview.insert(parent, '0', r["name"], text = r["name"])
+                for s in r["specs"]:
+                    if '::' in s:
+                        phrase, action = s.split('::', 1)
+                        self.treeview.insert(r["name"], 'end', phrase, text=phrase, value=[action])
+                    else:
+                        self.treeview.insert(r["name"], 'end', s, text=s)
+
+    def clearrules(self):
+        for item in self.treeview.get_children():
+            self.treeview.delete(item)
+    
+    def hiderules(self):
+        self.withdraw()
+    
+    def showrules(self):
+        self.deiconify()
 
 if __name__ == "__main__":
-    signal.signal(signal.SIGINT, handler)
-    server_address = (Communicator.LOCALHOST, Communicator().com_registry["hud"])
-    # allow_none=True means Python constant None will be translated into XML
-    server = SimpleXMLRPCServer(server_address, logRequests=False, allow_none=True)
-    app = QApplication(sys.argv)
-    window = HUDWindow(server)
-    window.show()
-    exit_code = app.exec_()
-    server.shutdown()
-    sys.exit(exit_code)
+    # Quick and dirty way to test the hud window
+    from multiprocessing import Process, Queue
+    import time
+    conn = Queue()
+    p = Process(target=hud_manager, args=(conn,), daemon=True)
+    p.start()
+    conn.put(("SHOW_HUD", ""), block=False)
+    conn.put(("ENGINE", "No rules loaded"), block=False)
+    #Whoconn.put(None, block=False)
+    #conn.put(("CLEAR_HUD", "Test"), block=False)
+    #conn.put(("CLOSE_HUD", ""), block=False)
+    conn.put(("SHOW_RULES", ""), block=False)
+    conn.put(("COMMAND", "COMMAND 1"), block=False)
+    conn.put(("fDICTATION", "This is a test dictation"), block=False)
+    conn.put(("MESSAGE", "MESSAGE 12"), block=False)
+    conn.put(("COMMAND", "COMMAND 1"), block=False)
+    p.join()

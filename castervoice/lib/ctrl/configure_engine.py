@@ -1,26 +1,8 @@
 import time
-from dragonfly import get_current_engine, register_recognition_callback, RecognitionObserver
+from multiprocessing import get_context
+from dragonfly import get_current_engine, register_recognition_callback
 from castervoice.lib import settings
 from castervoice.lib import printer
-
-
-class Observer(RecognitionObserver):
-    def __init__(self):
-        from castervoice.lib import control
-        self.mic_mode = None
-        self._engine_modes_manager = control.nexus().engine_modes_manager
-
-    def on_begin(self):
-        self.mic_mode = self._engine_modes_manager.get_mic_mode()
-
-    def on_recognition(self, words):
-        if not self.mic_mode == "sleeping":
-            printer.out("$ {}".format(" ".join(words)))
-
-    def on_failure(self):
-        if not self.mic_mode == "sleeping":
-            printer.out("?!")
-
 
 
 class EngineConfigEarly:
@@ -32,6 +14,7 @@ class EngineConfigEarly:
     def __init__(self):
         self.engine = get_current_engine().name
         self._set_cancel_word()
+        self._set_pythonw_context()
 
     def _set_cancel_word(self):
         """
@@ -41,6 +24,15 @@ class EngineConfigEarly:
             settings.WSR = True
             from castervoice.rules.ccr.standard import SymbolSpecs
             SymbolSpecs.set_cancel_word("escape")
+
+    def _set_pythonw_context(self):
+        """
+        Instruct the multi-processing library to use pythonw
+        for spawning tasks. Otherwise it tries to boot new copy of DNS/DPI.
+        """
+        if self.engine == "natlink":
+            pythonw = settings.SETTINGS["paths"]["PYTHONW"]
+            get_context("spawn").set_executable(pythonw)
 
 
 class EngineConfigLate:
@@ -54,7 +46,6 @@ class EngineConfigLate:
         self.engine = get_current_engine().name
         self.sync_timer = None
         self.sleep_timer = None
-        Observer().register()
 
 
         if self.engine != 'natlink':

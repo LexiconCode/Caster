@@ -2,7 +2,7 @@
 main Caster module
 Created on Jun 29, 2014
 '''
-import logging
+
 import importlib
 from dragonfly import get_engine, get_current_engine
 from castervoice.lib import control
@@ -13,7 +13,7 @@ from castervoice.lib.ctrl.dependencies import DependencyMan
 from castervoice.lib.ctrl.updatecheck import UpdateChecker
 from castervoice.asynch import hud_support
 
-printer.out("@ - Starting {} with `{}` Engine -\n".format(settings.SOFTWARE_NAME, get_engine().name))
+printer.out("- Starting {} with `{}` Engine -\n".format(settings.SOFTWARE_NAME, get_engine().name))
 
 DependencyMan().initialize()  # requires nothing
 settings.initialize()
@@ -38,7 +38,7 @@ if settings.SETTINGS["sikuli"]["enabled"]:
     sikuli_controller.get_instance().bootstrap_start_server_proxy()
 
 if get_current_engine().name != "text":
-    hud_support.start_hud()
+    hud_support.initializeHUD().start()
 
 dh = printer.get_delegating_handler()
 dh.register_handler(hud_support.HudPrintMessageHandler()) # After hud starts
