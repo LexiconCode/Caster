@@ -11,30 +11,30 @@ class CCRType(object):
 # default-on modules
 CORE = [
     # Caster CCR "core" set:
-    "Alphabet", "Navigation", "NavigationNon", "Numbers", "Punctuation", "Keyboard",
+    #"Alphabet", "Navigation", "NavigationNon", "Numbers", "Punctuation", "Keyboard",
     # Rules which were split out of _caster.py:
-    "CasterRule", "CasterMicRule", "HardwareRule", "MouseAlternativesRule", "WindowManagementRule",
+    #"CasterRule", "CasterMicRule", "HardwareRule", "MouseAlternativesRule", "WindowManagementRule",
     # Alternate mouse grid controls:
-    "DouglasGridRule", "RainbowGridRule", "SudokuGridRule",
+   # "DouglasGridRule", "RainbowGridRule", "SudokuGridRule",
     # HMC GUI control rules:
-    "HMCRule", "HMCConfirmRule", "HMCDirectoryRule",
-    "HMCHistoryRule", "HMCLaunchRule", "HMCSettingsRule",
+   # "HMCRule", "HMCConfirmRule", "HMCDirectoryRule",
+   # "HMCHistoryRule", "HMCLaunchRule", "HMCSettingsRule",
     # GUI Rules
-    "HistoryRule", "ChainAlias", "Alias",
+   # "HistoryRule", "ChainAlias", "Alias",
     # other common rules
-    "BringRule", "Again"
+    #"BringRule", "Again"
     ]
 
-# default-on modules that are platform or engine specific
-if sys.platform == "win32":
-    CORE.extend([
-         "LegionGridRule",
-         "IERule"
-    ])
-    # get_engine() is used here as a workaround for running Natlink inprocess
-    if dragonfly.get_engine().name == 'natlink':
-        CORE.append("DragonRule")
-
+## default-on modules that are platform or engine specific
+#if sys.platform == "win32":
+#    CORE.extend([
+#         "LegionGridRule",
+#         "IERule"
+#    ])
+#    # get_engine() is used here as a workaround for running Natlink inprocess
+#    if dragonfly.get_engine().name == 'natlink':
+#        CORE.append("DragonRule")
+#
 # internal rules
 INTERNAL = [
     "GrammarActivatorRule", "HooksActivationRule", "TransformersActivationRule",
@@ -43,13 +43,13 @@ INTERNAL = [
 
 # default companion rules
 COMPANION_STARTER = {
-    "Navigation": ["NavigationNon"],
-    "Java": ["JavaNon"],
-    "Matlab": ["MatlabNon"],
-    "Prolog": ["PrologNon"],
-    "Python": ["PythonNon"],
-    "Rust": ["RustNon"],
-    "VHDL": ["VHDLnon"],
-    "EclipseCCR": ["EclipseRule"],
-    "VSCodeCcrRule": ["VSCodeNonCcrRule"]
+ #   "Navigation": ["NavigationNon"],
+ #   "Java": ["JavaNon"],
+ #   "Matlab": ["MatlabNon"],
+ #   "Prolog": ["PrologNon"],
+ #   "Python": ["PythonNon"],
+ #   "Rust": ["RustNon"],
+ #   "VHDL": ["VHDLnon"],
+ #   "EclipseCCR": ["EclipseRule"],
+ #   "VSCodeCcrRule": ["VSCodeNonCcrRule"]
 }

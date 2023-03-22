@@ -2,9 +2,8 @@ import traceback
 
 from dragonfly.grammar.elements import RuleRef, Alternative, Repetition
 from dragonfly.grammar.rule_compound import CompoundRule
-from dragonfly import FuncContext
+from dragonfly import FuncContext, AppContext
 from castervoice.lib.const import CCRType
-from castervoice.lib.context import AppContext
 from castervoice.lib.ctrl.mgr.rules_enabled_diff import RulesEnabledDiff
 from castervoice.lib.merge.ccrmerging2.merge_result import MergeResult
 

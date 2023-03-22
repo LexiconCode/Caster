@@ -42,14 +42,7 @@ class Nexus:
         manage global state. It is also an access point to those things for other
         things which need them. This access should be limited.
         """
-
-        '''CasterState is used for impl of the asynchronous actions'''
-
-        self.state = CasterState()
-
-        '''rpc class for interacting with Caster UI elements via xmlrpclib'''
-        self.comm = Communicator()
-
+        
         '''tracks both which rules are enabled and the rules' order'''
         rules_config = RulesConfig()
 

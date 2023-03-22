@@ -1,8 +1,7 @@
 from itertools import permutations
 
-from dragonfly.grammar.context import LogicNotContext, Context, LogicAndContext,FuncContext
+from dragonfly.grammar.context import LogicNotContext, Context, LogicAndContext,FuncContext, AppContext
 from mock import Mock
-from castervoice.lib.context import AppContext
 from castervoice.rules.apps.editor.eclipse_rules.eclipse import EclipseCCR
 from castervoice.rules.apps.editor.vscode_rules.vscode import VSCodeCcrRule
 from castervoice.rules.core.alphabet_rules.alphabet import Alphabet

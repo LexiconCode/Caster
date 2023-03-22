@@ -1,6 +1,5 @@
 from dragonfly.actions.action_function import Function
 
-from castervoice.asynch.hmc import h_launch
 from castervoice.lib import settings, utilities
 from castervoice.lib.merge.state.actions import AsynchronousAction, \
     RegisteredAction
@@ -9,7 +8,6 @@ from castervoice.lib.merge.state.stackitems import StackItemConfirm, \
     StackItemAsynchronous
 
 
-#win32gui.SystemParametersInfo(win32con.SPI_SETFOREGROUNDLOCKTIMEOUT, 0, 1)
 class BoxAction(AsynchronousAction):
     '''
     Similar to AsynchronousAction, but the repeated action is always
@@ -62,7 +60,7 @@ class BoxAction(AsynchronousAction):
     def _execute(self, data=None):
         self._["tries"] = 0  # reset
         self._["dragonfly_data"] = data
-        h_launch.launch(self.box_type, data=self.encode_box_settings())
+        #h_launch.launch(self.box_type, data=self.encode_box_settings())
         self.nexus().state.add(StackItemAsynchronous(self, data))
 
     def encode_box_settings(self):
@@ -132,9 +130,9 @@ class ConfirmAction(AsynchronousAction):
         confirm_stack_item = StackItemConfirm(self, data)
         confirm_stack_item.shared_state(self.mutable_integer)
 
-        h_launch.launch(
-            settings.QTYPE_CONFIRM,
-            data=settings.HMC_SEPARATOR.join(self.instructions.split(" ")))
+        #h_launch.launch(
+        #    settings.QTYPE_CONFIRM,
+        #    data=settings.HMC_SEPARATOR.join(self.instructions.split(" ")))
         self.nexus().state.add(confirm_stack_item)
 
 
