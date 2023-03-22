@@ -2,10 +2,6 @@ import setuptools
 import os
 import codecs
 import re
-import atexit
-from setuptools.command.install import install
-from setuptools.command.develop import develop
-
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -22,22 +18,6 @@ def find_version(*file_paths):
     if version_match:
         return version_match.group(1)
     raise RuntimeError("Unable to find version string.")
-
-
-def _post_install():
-    from post_setup import RunPostInstall
-    RunPostInstall()
-
-
-class new_install(install):
-    def run(self):
-        atexit.register(_post_install)
-        install.run(self)
-
-
-class dev_install(develop):
-    def run(self):
-        develop.run(self)
 
 readmepath = os.path.normpath(os.path.join(here, "docs/README.md"))
 with open(readmepath, "r") as fh:
@@ -70,7 +50,4 @@ setuptools.setup(
         "scandir",
         "pyvda;platform_system=='Windows'",
     ],
-    cmdclass={'install': new_install,
-              'develop': dev_install,
-              },
 )

@@ -10,7 +10,7 @@
 # You can skip down to the next comment, for now this is not important...
 
 from dragonfly import (BringApp, Key, Function, Grammar, Playback, 
-                       IntegerRef, Dictation, Choice, WaitWindow, MappingRule, Text, Mouse,)
+                       IntegerRef, Dictation, Choice, WaitWindow, MappingRule, Text, Mouse)
 
 def my_function(n, text):
     print("put some Python logic here: " + str(text))

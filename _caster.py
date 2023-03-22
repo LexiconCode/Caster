@@ -8,13 +8,10 @@ from dragonfly import get_engine, get_current_engine
 from castervoice.lib import control
 from castervoice.lib import settings
 from castervoice.lib import printer
-from castervoice.lib.ctrl.dependencies import DependencyMan
 
 printer.out("@ - Starting {} with `{}` Engine -\n".format(settings.SOFTWARE_NAME, get_engine().name))
 
-DependencyMan().initialize()  # requires nothing
 settings.initialize()
-
 
 if control.nexus() is None:
     from castervoice.lib.ctrl.mgr.loading.load.content_loader import ContentLoader

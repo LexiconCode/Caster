@@ -14,10 +14,9 @@
 # You can skip down to the next comment, for now this is not important...
 
 from dragonfly import (BringApp, Key, Function, Playback, 
-                       IntegerRef, Dictation, Choice, WaitWindow, MappingRule)
+                       IntegerRef, Dictation, Choice, WaitWindow, MappingRule, Key, Text, Mouse)
 
 from castervoice.lib.ctrl.mgr.rule_details import RuleDetails
-from castervoice.lib.actions import Key, Text, Mouse
 
 
 def my_function(n, text):
