@@ -219,9 +219,10 @@ class HudPrintMessageHandler(printer.BaseMessageHandler):
     def __init__(self):
         super(HudPrintMessageHandler, self).__init__()
         try:
-            if WinProcess.is_alive():
-                show_hud()
-                Observer().register()
+            if WinProcess is not None:
+                if WinProcess.is_alive():
+                    show_hud()
+                    Observer().register()
         except Exception as e:
             printer.out(f"HudPrintMessageHandler: Hud not available. \n{e}")
 
