@@ -155,7 +155,6 @@ class RulesUi(tk.Toplevel):
 
     def setrules(self, rules_dict):
         for g in rules_dict:
-            print(g)
             gram = g["name"] if len(g["rules"]) > 1 else None # nested rules in a grammar
             if gram:
                 self.treeview.insert('', '0', gram, text = gram) # Insert grammar name to top level tree view
@@ -165,9 +164,12 @@ class RulesUi(tk.Toplevel):
                 for s in r["specs"]:
                     if '::' in s:
                         phrase, action = s.split('::', 1)
-                        self.treeview.insert(r["name"], 'end', phrase, text=phrase, value=[action])
+                        # Generate a unique ID for each item
+                        unique_id = f"{(r['name'])}_{phrase}"
+                        self.treeview.insert(r["name"], 'end', unique_id, text=phrase, value=[action])
                     else:
-                        self.treeview.insert(r["name"], 'end', s, text=s)
+                        unique_id = f"{(r['name'])}_{s}"
+                        self.treeview.insert(r["name"], 'end', unique_id, text=s)
 
     def clearrules(self):
         for item in self.treeview.get_children():
@@ -192,6 +194,7 @@ if __name__ == "__main__":
     #conn.put(("CLEAR_HUD", "Test"), block=False)
     #conn.put(("CLOSE_HUD", ""), block=False)
     conn.put(("SHOW_RULES", ""), block=False)
+    conn.put(("COMMAND", "COMMAND 1"), block=False)
     conn.put(("COMMAND", "COMMAND 1"), block=False)
     conn.put(("fDICTATION", "This is a test dictation"), block=False)
     conn.put(("MESSAGE", "MESSAGE 12"), block=False)
