@@ -1,5 +1,3 @@
-import os
-
 from dragonfly import Function
 from castervoice.lib import settings
 from castervoice.lib.ctrl.mgr.errors.tree_rule_config_error import TreeRuleConfigurationError

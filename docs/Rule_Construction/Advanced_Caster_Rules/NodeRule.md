@@ -93,7 +93,7 @@ HintNode("choose [<d>]", Function(print_choice), extras=[Choice("d", {"one":1, "
 ### Complete NodeRule Example Rule
 
 ```python
-from castervoice.lib.actions import Text
+from dragonfly import Text
 from castervoice.lib.const import CCRType
 from castervoice.lib.ctrl.mgr.rule_details import RuleDetails
 from castervoice.lib.merge.selfmod.tree_rule.tree_node import TreeNode

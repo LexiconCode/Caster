@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from castervoice.lib.actions import Text
+from dragonfly import Text
 from castervoice.lib.merge.selfmod.tree_rule.invalid_tree_node_path_error import InvalidTreeNodePathError
 from castervoice.lib.merge.selfmod.tree_rule.tree_node import TreeNode
 

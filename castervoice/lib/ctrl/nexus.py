@@ -25,7 +25,6 @@ from castervoice.lib.ctrl.mgr.validation.details.non_ccr_validator import NonCCR
 from castervoice.lib.ctrl.mgr.validation.rules.mergerule_validator import IsMergeRuleValidator
 from castervoice.lib.ctrl.mgr.validation.rules.not_treerule_validator import NotTreeRuleValidator
 from castervoice.lib.ctrl.mgr.validation.rules.selfmod_validator import CCRSelfModifyingRuleValidator
-from castervoice.lib.merge.communication import Communicator
 from castervoice.lib.merge.selfmod.smr_configurer import SelfModRuleConfigurer
 from castervoice.lib.merge.state.stack import CasterState
 from castervoice.lib.ctrl.mgr.grammar_manager import GrammarManager
@@ -46,9 +45,6 @@ class Nexus:
         '''CasterState is used for impl of the asynchronous actions'''
 
         self.state = CasterState()
-
-        '''rpc class for interacting with Caster UI elements via xmlrpclib'''
-        self.comm = Communicator()
 
         '''tracks both which rules are enabled and the rules' order'''
         rules_config = RulesConfig()
